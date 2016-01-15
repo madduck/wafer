@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 import django.db.models.deletion
 from django.conf import settings
+import wafer.kvpairs.fields
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('auth', '0001_initial'),
+        ('contenttypes', '0002_remove_content_type_name'),
+        ('auth', '0006_require_contenttypes_0002'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('contenttypes', '0001_initial'),
     ]
 
     operations = [
@@ -27,24 +28,22 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name': 'Key',
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='KeyValuePair',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('ref_id', models.PositiveIntegerField(verbose_name=b'ID of referenced model instance')),
+                ('ref_obj', wafer.kvpairs.fields.RefObjField(ct_path=b'key.model_ct')),
                 ('value', models.CharField(max_length=65535, verbose_name=b'Value for key associated with model instance')),
                 ('key', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, verbose_name=b'Base key context', to='kvpairs.Key')),
             ],
             options={
                 'verbose_name': 'Key-value pair',
             },
-            bases=(models.Model,),
         ),
         migrations.AlterUniqueTogether(
             name='keyvaluepair',
-            unique_together=set([('key', 'ref_id')]),
+            unique_together=set([('key', 'ref_obj')]),
         ),
         migrations.AlterUniqueTogether(
             name='key',

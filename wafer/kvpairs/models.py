@@ -13,7 +13,7 @@ KEYNAME_MAXLEN = settings.WAFER_KVPAIRS_KEYNAME_MAXLEN
 VALUE_MAXLEN = settings.WAFER_KVPAIRS_VALUE_MAXLEN
 AUTOCREATE_KEYS = settings.WAFER_KVPAIRS_AUTOCREATE_KEYS
 
-from .fields import IndirectGenericForeignKey
+from .fields import RefObjField
 
 
 # the list of models to which keys can be "attached", not sure why we limit
@@ -154,23 +154,16 @@ class KeyValuePair(models.Model):
     key = models.ForeignKey('Key', on_delete=models.PROTECT,
             verbose_name='Base key context')
 
-    # The foreign key to the actual object we're referencing, e.g. the User to
-    # which we are attributing a value
-    ref_id = models.PositiveIntegerField(
-            verbose_name='ID of referenced model instance')
-
-    # The logic for the indirect generic foreign key happens in the
-    # IndirectGenericForeignKey field, which we need to instantiate, but it
-    # doesn't actually hold any data.
-    ref_obj = IndirectGenericForeignKey(ct_field_path='key.model_ct',
-            fk_field='ref_id')
+    # The object we're referencing, e.g. the User to which we are attributing
+    # a value.
+    ref_obj = RefObjField(ct_path='key.model_ct')
 
     # finally the value to store
     value = models.CharField(max_length=VALUE_MAXLEN,
             verbose_name='Value for key associated with model instance')
 
     class Meta:
-        unique_together = (('key', 'ref_id'),)
+        unique_together = (('key', 'ref_obj'),)
         verbose_name = 'Key-value pair'
 
     def __str__(self):
@@ -187,10 +180,10 @@ class KeyValuePair(models.Model):
     def get_ref_instance(self):
         '''Returns the instance referenced by the KeyValuePair'''
         model_class = self.get_model_class()
-        return model_class.objects.get(pk=self.ref_id)
+        return model_class.objects.get(pk=self.ref_obj_id)
     # For direct use of this attribute in forms:
-    get_ref_instance.short_description = ref_id.verbose_name
-    get_ref_instance.admin_order_field = 'ref_id'
+    get_ref_instance.short_description = ref_obj.verbose_name
+    get_ref_instance.admin_order_field = 'ref_obj'
 
     @classmethod
     def _get_or_create_key_for_instance(cls, instance, name,
